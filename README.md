@@ -10,6 +10,7 @@ This repo contains the Lua modules for the **Pastaland** Sauerbraten server:
 * The *mapbattle_gst* module, that provides a slightly modified version of the regular spaghettimod matbattle
 * The *rename* module, to allow auth holders to change other players names
 * The *disconnect* module, to free game slots
+* The *pastanames* module, to rename unnamed players to a delicious variety of pasta.
 * The *1000-gustavo-config* file, the actual server configuration.
 
 ###Building
