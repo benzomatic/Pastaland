@@ -5,6 +5,7 @@
     - auto-pastaname: change unnamed player's name to a pasta-variety upon connect (occasionally makes the command redundant)
 
   Ideas by a_theory and Star
+  Implementation by Mr.Benz
   
 ]]--
 
