@@ -11,6 +11,7 @@ This repo contains the Lua modules for the **Pastaland** Sauerbraten server:
 * The *rename* module, to allow auth holders to change other players names
 * The *disconnect* module, to free game slots
 * The *pastanames* module, to rename unnamed players to a delicious variety of pasta.
+* The *speclock* module, which provides the #jail and #free commands to force a player in spectator mode.
 * The *1000-gustavo-config* file, the actual server configuration.
 
 ###Building
@@ -24,7 +25,8 @@ This repo contains the Lua modules for the **Pastaland** Sauerbraten server:
 * Once copied or linked the modules, there's no need to rebuild. Just move to spaghettimod's root dir and launch *#GST=1 ./sauer_server*
 
 ##PastalandJs
-PastalandJs is a service based on NodeJs that communicates via UDP with the Pastaland server. Currently it is just used to save and load player statistics and connection info, persisted in a Sqlite database.
+PastalandJs is a service based on NodeJs that communicates via UDP with the Pastaland server. Currently it is used to save and load player statistics and connection info, persisted in a Sqlite database.
+PastalandJs will also run a webserver on port 8082, serving the statistics saved in the database.
 
 ###Installing PastalandJs
 * Install NodeJs. PastalandJs has been tested with NodeJs 5.9 but any version > 0.10 should be fine.
@@ -34,7 +36,7 @@ PastalandJs is a service based on NodeJs that communicates via UDP with the Past
 ###Running PastalandJs
 The easiest way is opening a terminal in *pastalandjs* folder and issue *node index.js*, but the recommended way is by means of a process manager like Pm2: https://github.com/Unitech/pm2
 Since the connection between Pastaland and PastalandJs is via UDP, there is actually no connection. This means that one can run with or without the other, with no problems whatsoever.
-PastalandJs will also run a webserver on port 8082, serving the statistics saved in the database. When running in local mode, you can access the pages from the browser at the address http://localhost:8082/rankbymatches.
+When running in local mode, you can access the rank pages from your browser at the address http://localhost:8082/rankbymatches.
 
 ###License
 All the files in this repository are released under the Zlib license

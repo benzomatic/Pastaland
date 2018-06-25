@@ -11,6 +11,7 @@ This repo contains the Lua modules for the **Pastaland** Sauerbraten server:
 * The *rename* module, to allow auth holders to change other players names
 * The *disconnect* module, to free game slots
 * The *pastanames* module, to rename unnamed players to a delicious variety of pasta.
+* The *speclock* module, which provides the #jail and #free commands to force a player in spectator mode.
 * The *1000-gustavo-config* file, the actual server configuration.
 
 ###Building
@@ -18,7 +19,7 @@ This repo contains the Lua modules for the **Pastaland** Sauerbraten server:
 * Build spaghettimod according to Pisto's instructions.
 
 ###Installing the modules
-* Just copy or link (ln -s) the Pastaland modules respecting the paths shown in this repo: *stats.lua*, *autospec.lua*, *authloader.lua*, *db.lua*, *disconnect.lua*, *mapbattle_gst.lua*, *rename.lua* and *jokes.lua* go in script/std, *1000-gustavo-config.lua* goes into script/load.d, *gustavo.auth* contains the authkeys for players and goes in the var directory.
+* Just copy or link (ln -s) the Pastaland modules respecting the paths shown in this repo: *stats.lua*, *autospec.lua*, *authloader.lua*, *db.lua*, *disconnect.lua*, *mapbattle_gst.lua*, *rename.lua*, *speclock.lua* and *jokes.lua* go in script/std, *1000-gustavo-config.lua* goes into script/load.d, *gustavo.auth* contains the authkeys for players and goes in the var directory.
 
 ###Running
 * Once copied or linked the modules, there's no need to rebuild. Just move to spaghettimod's root dir and launch *#GST=1 ./sauer_server*

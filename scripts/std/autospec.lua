@@ -13,6 +13,7 @@ local DELTA = 0.2 -- if the position difference between checks is lower than thi
 
 -- Called every TIME_BETWEEN_CHECKS milliseconds.
 local function updateClientPosition()
+  if server.interm > 0 then return end
   for ci in iterators.players() do
         
     if not ci.extra.curPos then

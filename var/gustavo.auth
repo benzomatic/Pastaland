@@ -14,26 +14,6 @@
     "pubkey":"+e676b6d2ddc76fcfff37119d4baa948a69a5996a832ce889",
     "domain":"gustavo"
   },{
-    "user":"Pikachu",
-    "privilege":"m",
-    "pubkey":"+472f6febce5a00b0fa19954f98f01606c3c7f67f9ef71244",
-    "domain":"gustavo"
-  },{
-    "user":"Obstriegel",
-    "privilege":"m",
-    "pubkey":"-7b4bcc7bf148a3f9891c7a1fd1d70e8fd03d8c3d980791bc",
-    "domain":"gustavo"
-  },{
-    "user":"Star",
-    "privilege":"m",
-    "pubkey":"+de96f3e0ba5bcb692c86cbb06a695fc3db60debc59ec8355",
-    "domain":"gustavo"
-  },{
-    "user":"Fear",
-    "privilege":"m",
-    "pubkey":"+bf1fa38e7439791d9ff52635575e6a002fdfd532d07d5565",
-    "domain":"gustavo"
-  },{
     "user":"a-monster",
     "privilege":"a",
     "pubkey":"-a5a2ba763973d5af0cd90bb46a663712376e855681672864",
@@ -59,24 +39,14 @@
     "pubkey":"-f16c266e93ef6e4882dd865e56cc3f7d3d84d9b4887e01b7",
     "domain":"gustavo"
   },{
-    "user":"Swatllama",
-    "privilege":"m",
-    "pubkey":"-b7a19f6996775d3524d6e4c17f85274c925dd0f8cbe9baae",
-    "domain":"gustavo"
-  },{
     "user":"Bourbon",
     "privilege":"m",
     "pubkey":"-ceb7be8552da06683cb117c585e4bc255b4ca05385646321",
     "domain":"gustavo"
   },{
-    "user":"Dai",
-    "privilege":"m",
-    "pubkey":"+f7e29d9c5e91fb53d2c19927c3ccae6869055cc5543f31d1",
-    "domain":"gustavo"
-  },{
     "user":"Zver",
     "privilege":"m",
-    "pubkey":"-b89f2161ffe5d9787e465db4cf21801c192334400dd93292",
+    "pubkey":"+ce18e7ff666319d8dc0fba7a6de1352a676f5c5a96d9a168",
     "domain":"gustavo"
   },{
     "user":"Duke",
@@ -158,4 +128,80 @@
     "domain":"gustavo",
     "pubkey":"+61a89fa5120ec0104da4cb51c1afe618b12c5cd1afda9a8e",
     "privilege":"m"
+  },{
+    "user":"Shikijo",
+    "privilege":"m",
+    "pubkey":"+c3fd8098642b21aeb335967ccaafc1c05e580e0ce253cf80",
+    "domain":"gustavo"
+  },{
+    "user":"Buck",
+    "domain":"gustavo",
+    "pubkey":"+2cff16be3b865023cd7ba6a33dc62a4a03b4e0b07d4ed718",
+    "privilege":"m"
+  },{
+    "user":"Epimeteo",
+    "privilege":"m",
+    "pubkey":"+4a6279ecbf9fccb967c940d9d5cc73a62f0cd86e610391d5",
+    "domain":"gustavo"
+  },{
+    "user":"ZahariaHome",
+    "privilege":"m",
+    "pubkey":"-1e30dda790fbc42689ea1125a489f8835a1711dfe702abbb",
+    "domain":"gustavo"
+  },{
+    "user":"Muz",
+    "domain":"gustavo",
+    "pubkey":"+111c55f69013410e3649d8ee1e54ed5fc4e90c54bd4a6d32",
+    "privilege":"m"
+  },{
+    "user":"4tune",
+    "privilege":"m",
+    "pubkey":"+ed20acfcfdedb0c070cc4f9d2092a4ddd8d8da60b0418963",
+    "domain":"gustavo"
+  },{
+    "user":"altcineva",
+    "privilege":"m",
+    "pubkey":"+fe52d18447af421b34f42ca585858306285ae3f4306cf46b",
+    "domain":"gustavo"
+  },{
+    "user":"Fritz",
+    "domain":"gustavo",
+    "pubkey":"-a7c003e0f3fbb757aab6bcc627507681026c09bd3a55f0bf",
+    "privilege":"m"
+  },{
+    "user":"M0UL",
+    "privilege":"m",
+    "pubkey":"-41893d7a1796ea5292715df86ae7b86d65d4fe4334c42c60",
+    "domain":"gustavo"
+  },{
+    "user":"a_theory",
+    "domain":"gustavo",
+    "pubkey":"+43a30e98fc17840b3051cb95a15f38925a9cc368a1bdf57c",
+    "privilege":"m"
+  },{
+    "user":"Mikey",
+    "privilege":"m",
+    "pubkey":"+329ada8375c4f71d8fc2a740265501087f734d7bc93b0125",
+    "domain":"gustavo"
+  },{
+    "user":"Gufo",
+    "domain":"gustavo",
+    "pubkey":"-62e61baf3a9fb9de291006005c84f1c487e6f9fe2a8c4f46",
+    "privilege":"m"
+  },{
+    "user":"Brecht",
+    "privilege":"m",
+    "pubkey":"+edcf846f8dff0b483ca7714cd172c22d50f885932e2ede27",
+    "domain":"gustavo"
+  },{
+    "user":"Sweeper",
+    "domain":"gustavo",
+    "pubkey":"+402d20059f178081449720e84fcfeee8a5f7f1e6e1756b84",
+    "privilege":"m"
+  },{
+    "user":"Owl",
+    "privilege":"m",
+    "pubkey":"+c9c989827d32c3a3bb7ecd97fe41f910c10effae1fd83d17",
+    "domain":"gustavo"
   }]
+

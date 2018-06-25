@@ -47,7 +47,7 @@ local ctfmaps = table.concat({
   "abbey akroseum arbana asgard authentic autumn bad_moon berlin_wall bt_falls campo capture_night catch22 core_refuge core_transfer damnation desecration dust2",
   "eternal_valley europium face-capture flagstone forge forgotten garden hallo haste hidden infamy kopenhagen l_ctf mach2 mbt1 mbt12",
   "mbt4 mercury mill nitro nucleus recovery redemption reissen sacrifice shipwreck siberia snapper_rocks spcr subterra suburb tejen tempest",
-  "tortuga turbulence twinforts urban_c valhalla wdcd xenon fc5 gubo"
+  "tortuga turbulence twinforts urban_c valhalla wdcd xenon fc5 gubo duomo"
 }, " ")
  
 ctfmaps = map.uv(function(maps)
@@ -120,7 +120,8 @@ require"std.db"       -- Pastalandjs module
 require"std.mapbattle_gst"-- mapbattle module
 require"std.rename"   -- rename module
 require"std.disconnect" --disconnect module
-require"std.pastanames"
+require"std.pastanames" --pastanames module
+require"std.speclock"   --speclock module
 --require"std.settime"  -- USE ONLY DURING TESTING
 
 spaghetti.addhook("entsloaded", function()
@@ -294,3 +295,4 @@ end)
 spaghetti.later(30000, function()
   return server.m_ctf and server.sendservmsg("Remember, it's RUGBY MODE: you \f6shoot a teammate\f7 with \f3rifle\f7 to \f6pass the flag\f7!")
 end, true)
+
