@@ -63,28 +63,26 @@ end)
 local function blindcnlist(viewer)
   local blindlist = {}
   for p in iterators.all() do
-    if hidehl then 
-      if p.clientnum ~= viewer.clientnum then 
+    if hidehl and (p.clientnum ~= viewer.clientnum) then
         blindlist[p.clientnum] = true 
-      end 
-    else 
-      if p.team ~= viewer.team then 
+    elseif not hidehl and (p.team ~= viewer.team) then
         blindlist[p.clientnum] = true 
-      end 
     end
   end
   return blindlist
 end
 
 local function radiuslist(actor)
-  list = {}
+  local list = {}
   for target in iterators.all() do
-    if vec3(actor.state.o):dist(target.state.o) <= (basedist * share) and actor.team == target.team and actor.clientnum ~= target.clientnum then list[target.clientnum] = true end
+    if vec3(actor.state.o):dist(target.state.o) <= (basedist * share) and actor.team == target.team and actor.clientnum ~= target.clientnum then 
+      list[target.clientnum] = true 
+    end
   end
   return list
 end
 
-particles = function(ci, viewer)
+local function particles(ci, viewer)
   ci.extra.hlpart = trackent.add(ci, function(i, lastpos)
     local o = vec3(lastpos.pos)
     o.z = o.z + 17
@@ -92,7 +90,7 @@ particles = function(ci, viewer)
   end, false, true, blindcnlist(viewer))
 end
 
-noparticles = function(ci)
+local function noparticles(ci)
   if ci.extra.hlpart then trackent.remove(ci, ci.extra.hlpart) end
 end
 
@@ -100,15 +98,12 @@ local function highlightplayers(ci)
   if not highlights then return end
   local hl = {}
   hl.radiuslist = radiuslist(ci)
-  hl.listupdate = spaghetti.addhook("positionupdate", function(player)
-    if player.cp.team ~= ci.team then return end
+  hl.updater = spaghetti.later(200, function()
     hl.radiuslist = radiuslist(ci)
-  end)
-  hl.updater = spaghetti.later(250, function()
-  for p in iterators.all() do
-    if p.team == ci.team then noparticles(p) end --lazy
-    if hl.radiuslist[p.clientnum] then particles(p, ci) end
-  end
+    for p in iterators.all() do
+      if p.team == ci.team then noparticles(p) end 
+      if hl.radiuslist[p.clientnum] then particles(p, ci) end
+    end
   end, true)
   ci.extra.hl = hl
 end
@@ -116,12 +111,11 @@ end
 local function stophighlight(ci)
   local hl = ci.extra.hl
   if not hl then return end
-  if hl.listupdate then spaghetti.removehook(hl.listupdate) end
-  for p in iterators.all() do
-    if hl.radiuslist[p.clientnum] then noparticles(p) end
-  end
-  if hl.radiuslist then for k,v in pairs(hl.radiuslist) do hl.radiuslist[k]=nil end end
   if hl.updater then spaghetti.cancel(hl.updater) end
+  for p in iterators.all() do
+    if p.team == ci.team then noparticles(p) end
+  end
+  if hl.radiuslist then for k, v in pairs(hl.radiuslist) do hl.radiuslist[k] = nil end end
   ci.extra.hl = nil
 end
 
@@ -146,7 +140,7 @@ function module.on(state)
       server.ctfmode:takeflag(info.target, flag, flags[flag].version)
     end
     stophighlight(info.actor)
-    -- the new highlighter for info.target will be initiated in the takeflag-hook below
+    -- a rugby pass also constitutes a takeflag event for info.target, so the highlight is initialized below instead of here
     local hooks = spaghetti.hooks.rugbypass
     if hooks then hooks{ actor = info.actor, target = info.target, flags = actorflags } end
   end, true)
