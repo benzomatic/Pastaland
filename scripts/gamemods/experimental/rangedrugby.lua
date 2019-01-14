@@ -3,16 +3,20 @@
   Rugby mode: pass the flag you hold to a teammate by shooting at him with rifle
   Addition for CTF: Set a limit on the pass range and dynamically highlight teammates that the flagholder can still pass to.
 
+  Warning: This mod will cause high CPU usage.
+
 ]]--
 
-local ents, trackent, vec3  = require"std.ents", require"std.trackent", require"utils.vec3"
+local ents, trackent = require"std.ents", require"std.trackent"
 local playermsg, commands, iterators = require"std.playermsg", require"std.commands", require"std.iterators"
+local fp, L, vec3  = require"utils.fp", require"utils.lambda", require"utils.vec3"
+local map = fp.map
 
-local module = {}
+local module, hooks = {}, {}
 
 
 --[[ 
-	Pass range restriction 
+    Pass range restriction 
 ]]--
 
 local basedist, share = 1500, 2/5
@@ -42,8 +46,7 @@ end
 
 
 --[[ 
-	Particle effects: Assign particles to the teammates in pass-range.
-	It can be toggled if the particles are only visible to the flagholder or also the teammates themselves.
+    Particle effects: Assign particles to the teammates in pass-range.
 ]]-- 
 
 local highlights = true
@@ -53,33 +56,14 @@ commands.add("togglehl", function(info)
   playermsg("Radius highlights are " .. (highlights and "enabled" or "disabled") .. " from now on.", info.ci)
 end)
 
-local hidehl = true
-commands.add("hidehl", function(info)
-  if info.ci.privilege < server.PRIV_ADMIN then return playermsg("Access denied.", info.ci) end  
-  hidehl = not hidehl
-  playermsg("Radius highlights are now " .. (hidehl and "hidden" or "visible") .. " for teammates.", info.ci)
-end)
-
 local function blindcnlist(viewer)
   local blindlist = {}
   for p in iterators.all() do
-    if hidehl and (p.clientnum ~= viewer.clientnum) then
-        blindlist[p.clientnum] = true 
-    elseif not hidehl and (p.team ~= viewer.team) then
-        blindlist[p.clientnum] = true 
+    if (p.clientnum ~= viewer.clientnum) then
+      blindlist[p.clientnum] = true 
     end
   end
   return blindlist
-end
-
-local function radiuslist(actor)
-  local list = {}
-  for target in iterators.all() do
-    if vec3(actor.state.o):dist(target.state.o) <= (basedist * share) and actor.team == target.team and actor.clientnum ~= target.clientnum then 
-      list[target.clientnum] = true 
-    end
-  end
-  return list
 end
 
 local function particles(ci, viewer)
@@ -96,39 +80,35 @@ end
 
 local function highlightplayers(ci)
   if not highlights then return end
-  local hl = {}
-  hl.radiuslist = radiuslist(ci)
-  hl.updater = spaghetti.later(200, function()
-    hl.radiuslist = radiuslist(ci)
-    for p in iterators.all() do
-      if p.team == ci.team then noparticles(p) end 
-      if hl.radiuslist[p.clientnum] then particles(p, ci) end
+  ci.extra.hl = {}
+  ci.extra.hl.updater = spaghetti.later(200, function()
+    for p in iterators.inteam(ci.team) do
+      noparticles(p) 
+      if (vec3(ci.state.o):dist(p.state.o) <= (basedist * share)) and (ci.clientnum ~= p.clientnum) then 
+        particles(p, ci)
+      end
     end
   end, true)
-  ci.extra.hl = hl
 end
 
 local function stophighlight(ci)
   local hl = ci.extra.hl
   if not hl then return end
   if hl.updater then spaghetti.cancel(hl.updater) end
-  for p in iterators.all() do
-    if p.team == ci.team then noparticles(p) end
+  for p in iterators.inteam(ci.team) do
+    noparticles(p)
   end
-  if hl.radiuslist then for k, v in pairs(hl.radiuslist) do hl.radiuslist[k] = nil end end
-  ci.extra.hl = nil
 end
 
 
 --[[ 
-	Rugby implementation 
+    Rugby implementation 
 ]]--
 
-local dodamagehook
 function module.on(state)
-  if dodamagehook then spaghetti.removehook(dodamagehook) dodamagehook = nil end
+  map.np(L"spaghetti.removehook(_2)", hooks)
   if not state then return end
-  dodamagehook = spaghetti.addhook("dodamage", function(info)
+  hooks.dodamagehook = spaghetti.addhook("dodamage", function(info)
     if info.skip or not server.m_ctf or info.target.team ~= info.actor.team or info.gun ~= server.GUN_RIFLE then return end
     local flags, actorflags = server.ctfmode.flags, {}
     for i = 0, flags:length() - 1 do if flags[i].owner == info.actor.clientnum then actorflags[i] = true end end
@@ -144,23 +124,26 @@ function module.on(state)
     local hooks = spaghetti.hooks.rugbypass
     if hooks then hooks{ actor = info.actor, target = info.target, flags = actorflags } end
   end, true)
+  hooks.diedhook = spaghetti.addhook("servmodedied", function(info) 
+    stophighlight(info.target)
+  end)
+  hooks.takeflag = spaghetti.addhook("takeflag", function(info) 
+    stophighlight(info.ci)
+    highlightplayers(info.ci)
+  end)
+  hooks.dropflag = spaghetti.addhook("dropflag", function(info) 
+    stophighlight(info.ci)
+  end)
+  hooks.scoreflag = spaghetti.addhook("scoreflag", function(info) 
+    stophighlight(info.ci)
+  end)
+  hooks.changemap = spaghetti.addhook("changemap", function(info) 
+    for p in iterators.all() do
+      stophighlight(p)
+      noparticles(p)
+    end
+  end)
 end
 
-spaghetti.addhook("takeflag", function(info) 
-  stophighlight(info.ci)
-  highlightplayers(info.ci)
-end)
-spaghetti.addhook("dropflag", function(info) 
-  stophighlight(info.ci)
-end)
-spaghetti.addhook("scoreflag", function(info) 
-  stophighlight(info.ci)
-end)
-spaghetti.addhook("changemap", function(info) 
-  for p in iterators.all() do
-    stophighlight(p)
-    noparticles(p)
-  end
-end)
-
 return module
+
