@@ -3,21 +3,50 @@
   Rugby mode: pass the flag you hold to a teammate by shooting at him with rifle
   Addition for CTF: Set a limit on the pass range and dynamically highlight teammates that the flagholder can still pass to.
 
-  Warning: This mod will cause high CPU usage.
+  Warning: This mod might cause higher-than-normal CPU usage.
 
 ]]--
 
-local ents, trackent = require"std.ents", require"std.trackent"
-local playermsg, commands, iterators = require"std.playermsg", require"std.commands", require"std.iterators"
+local ents, playermsg, commands, iterators = require"std.ents", require"std.playermsg", require"std.commands", require"std.iterators"
+local n_client, putf = require"std.n_client", require"std.putf"
 local fp, L, vec3  = require"utils.fp", require"utils.lambda", require"utils.vec3"
 local map = fp.map
+require"std.notalive"
 
-local module, hooks = {}, {}
+local module, hooks, highlights = {}, {}, false
+
+
+--[[
+    Particle effects config
+]]
+
+module.effects = { 
+  teammates = {
+    z = 0,        -- add to z
+    particle = {
+      a1 = 11,    -- particle type; I use flames so the following attributes are:
+      a2 = 70,    -- radius
+      a3 = 50,    -- height
+      a4 = 0x060, -- color
+      a5 = 0      -- unused
+    }
+  },
+  flagholder = {
+    z = 16, 
+    particle = {
+      a1 = 11, 
+      a2 = 50, 
+      a3 = 50, 
+      a4 = 0x620,
+      a5 = 0 
+    }
+  }
+}
 
 
 --[[ 
     Pass range restriction 
-]]--
+]]
 
 local basedist, share = 1500, 2/5
 
@@ -25,123 +54,149 @@ local function specialmap()
   return (server.smapname == "recovery" or server.smapname == "mercury" or server.smapname == "l_ctf") and 1500 or nil
 end
 
-spaghetti.addhook("entsloaded", function(info) 
+local function calcmapsize() 
   if not server.m_ctf or server.m_hold or server.m_protect then return end
   local base1, base2 = nil, nil
   for i, _, ment in ents.enum(server.FLAG) do
     if base1 then base2 = ment.o else base1 = ment.o end
   end
   if not base1 or not base2 then return end
-  basedist = specialmap() or (vec3(base1):dist(base2) + 300) -- try to calculate max map size, including space behind bases [lazy]
+  basedist = specialmap() or (vec3(base1):dist(base2) + 300)
   base1, base2 = nil, nil
-end)
+end
 
-local function allowpass(actor, target)
-  if server.m_hold or server.m_protect then return true end -- only restrict passing in ctf
-  local playerdist = vec3(actor.state.o):dist(target.state.o)
-  if playerdist <= (basedist * share) then return true end
-  playermsg("\f6Info\f7: This player is \f3out of range\f7! You can only pass to teammates \f6close to you\f7! Close teammates have a \f0green indicator\f7!", actor)
-  return false
+local function inrange(actor, target)
+  return vec3(actor.state.o):dist(target.state.o) <= (basedist * share)
 end
 
 
 --[[ 
-    Particle effects: Assign particles to the teammates in pass-range.
-]]-- 
+    Particle effects: Highlight all teammates in pass-range for the flagholder. Also indicate to teammates if the flagholder can pass to them. 
+    Assign a placeholder particle to every client on connect and have a spaghetti.later send N_EDITENT packets to the flagholder and mates 
+    to update its position/appearance on the client side. Somewhat like std.trackent but better suited for this application.
+]] 
 
-local highlights = true
-commands.add("togglehl", function(info)
-  if info.ci.privilege < server.PRIV_ADMIN then return playermsg("Access denied.", info.ci) end  
-  highlights = not highlights
-  playermsg("Radius highlights are " .. (highlights and "enabled" or "disabled") .. " from now on.", info.ci)
-end)
-
-local function blindcnlist(viewer)
-  local blindlist = {}
-  for p in iterators.all() do
-    if (p.clientnum ~= viewer.clientnum) then
-      blindlist[p.clientnum] = true 
-    end
-  end
-  return blindlist
-end
-
-local function particles(ci, viewer)
-  ci.extra.hlpart = trackent.add(ci, function(i, lastpos)
-    local o = vec3(lastpos.pos)
-    o.z = o.z + 17
-    ents.editent(i, server.PARTICLES, o, 11, 40, 30, 0x060)
-  end, false, true, blindcnlist(viewer))
-end
-
-local function noparticles(ci)
-  if ci.extra.hlpart then trackent.remove(ci, ci.extra.hlpart) end
-end
-
-local function highlightplayers(ci)
+local function starthlmate(ci, mate, isflagholder)
   if not highlights then return end
-  ci.extra.hl = {}
-  ci.extra.hl.updater = spaghetti.later(200, function()
+  if ci.state.aitype == server.AI_BOT then return end
+  local effect = isflagholder and module.effects.flagholder or module.effects.teammates 
+  local pe, o, i = effect.particle, vec3(mate.state.o), mate.extra.particle
+  if not i or not o then return end
+  o.z = o.z + effect.z
+  local p = n_client(putf({r = true}, server.N_EDITENT, i, o.x * server.DMF, o.y * server.DMF, o.z * server.DMF, server.PARTICLES, pe.a1, pe.a2, pe.a3, pe.a4, pe.a5), ci):finalize()
+  engine.sendpacket(ci.clientnum, 1, p, -1)
+end
+
+local function stophlmate(ci, mate)
+  if not highlights then return end
+  if ci.state.aitype == server.AI_BOT then return end
+  local i = mate.extra.particle
+  if not i then return end 
+  local p = n_client(putf({ 20, r = 1}, server.N_EDITENT, i, -1e7,  -1e7,  -1e7, server.NOTUSED, 0, 0, 0, 0, 0), ci):finalize()
+  engine.sendpacket(ci.clientnum, 1, p, -1)
+end
+
+local function starthighlights(ci)
+  if not highlights then return end
+  ci.extra.highlightlater = spaghetti.later(100, function() 
     for p in iterators.inteam(ci.team) do
-      noparticles(p) 
-      if (vec3(ci.state.o):dist(p.state.o) <= (basedist * share)) and (ci.clientnum ~= p.clientnum) then 
-        particles(p, ci)
+      stophlmate(ci, p)
+      stophlmate(p, ci)
+      if (p.state.state == engine.CS_ALIVE) and inrange(ci, p) and (ci.clientnum ~= p.clientnum) then
+        starthlmate(ci, p)
+        starthlmate(p, ci, true)
       end
     end
   end, true)
 end
 
-local function stophighlight(ci)
-  local hl = ci.extra.hl
-  if not hl then return end
-  if hl.updater then spaghetti.cancel(hl.updater) end
-  for p in iterators.inteam(ci.team) do
-    noparticles(p)
+local function stophighlights(ci, notall)
+  local token, hadtoken = ci.extra.highlightlater, false
+  if token then 
+    spaghetti.cancel(token) 
+    hadtoken = true
   end
+  if hadtoken or (not hadtoken and not notall) then
+    for p in iterators.inteam(ci.team) do
+      stophlmate(ci, p)
+      stophlmate(p, ci)
+    end
+  end
+  ci.extra.highlightlater = nil
 end
 
 
 --[[ 
     Rugby implementation 
-]]--
+]]
 
 function module.on(state)
   map.np(L"spaghetti.removehook(_2)", hooks)
+  commands.remove("hltoggle")
   if not state then return end
+  highlights = state
+  hooks = {}
   hooks.dodamagehook = spaghetti.addhook("dodamage", function(info)
     if info.skip or not server.m_ctf or info.target.team ~= info.actor.team or info.gun ~= server.GUN_RIFLE then return end
     local flags, actorflags = server.ctfmode.flags, {}
     for i = 0, flags:length() - 1 do if flags[i].owner == info.actor.clientnum then actorflags[i] = true end end
     if not next(actorflags) then return end
     info.skip = true
-    if not allowpass(info.actor, info.target) then return end
+    if not inrange(info.actor, info.target) then 
+      return playermsg("\f6Info\f7: You can only pass to teammates \f6close to you\f7! Close teammates have a \f0green indicator\f7!", info.actor)
+    end
     for flag in pairs(actorflags) do
       server.ctfmode:returnflag(flag, 0)
-      server.ctfmode:takeflag(info.target, flag, flags[flag].version)
+      server.ctfmode:takeflag(info.target, flag, flags[flag].version) 
     end
-    stophighlight(info.actor)
-    -- a rugby pass also constitutes a takeflag event for info.target, so the highlight is initialized below instead of here
+    stophighlights(info.actor) 
     local hooks = spaghetti.hooks.rugbypass
     if hooks then hooks{ actor = info.actor, target = info.target, flags = actorflags } end
   end, true)
-  hooks.diedhook = spaghetti.addhook("servmodedied", function(info) 
-    stophighlight(info.target)
+  hooks.entshook = spaghetti.addhook("entsloaded", function(info) 
+    calcmapsize()
+  end)
+  hooks.connecthook = spaghetti.addhook("connected", function(info) 
+    info.ci.extra.particle = ents.newent(server.NOTUSED, nil, 0, 0, 0, 0, 0, L"")
+  end)
+  hooks.disconnecthook = spaghetti.addhook("clientdisconnect", function(info) 
+    stophighlights(info.ci)
+    if info.ci.extra.particle then info.ci.extra.particle = nil end -- keep the ent in server.sents/ments
+  end)
+  hooks.botjoin = spaghetti.addhook("botjoin", function(info) 
+    info.ci.extra.particle = ents.newent(server.NOTUSED, nil, 0, 0, 0, 0, 0, L"")
+  end)
+  hooks.botleave = spaghetti.addhook("botleave", function(info) 
+    stophighlights(info.ci)
+    if info.ci.extra.particle then info.ci.extra.particle = nil end
+  end)
+  hooks.diedhook = spaghetti.addhook("notalive", function(info) 
+    stophighlights(info.ci, true)
+  end)
+  hooks.switchteam = spaghetti.addhook(server.N_SWITCHTEAM, function(info) 
+    stophighlights(info.ci)
+  end)
+  hooks.setteam = spaghetti.addhook(server.N_SETTEAM, function(info) 
+    stophighlights(engine.getclientinfo(info.who))
   end)
   hooks.takeflag = spaghetti.addhook("takeflag", function(info) 
-    stophighlight(info.ci)
-    highlightplayers(info.ci)
+    stophighlights(info.ci)
+    starthighlights(info.ci)
   end)
   hooks.dropflag = spaghetti.addhook("dropflag", function(info) 
-    stophighlight(info.ci)
+    stophighlights(info.ci)
   end)
   hooks.scoreflag = spaghetti.addhook("scoreflag", function(info) 
-    stophighlight(info.ci)
+    stophighlights(info.ci)
   end)
   hooks.changemap = spaghetti.addhook("changemap", function(info) 
-    for p in iterators.all() do
-      stophighlight(p)
-      noparticles(p)
-    end
+    for p in iterators.all() do stophighlights(p, true) end
+  end)
+  commands.add("hltoggle", function(info)
+    if info.ci.privilege < server.PRIV_ADMIN then return playermsg("Access denied.", info.ci) end  
+    if highlights then for p in iterators.all() do stophighlights(p) end end
+    highlights = not highlights
+    playermsg("\f6Info\f7: Radius highlights are " .. (highlights and "enabled" or "disabled") .. " from now on.", info.ci)
   end)
 end
 
